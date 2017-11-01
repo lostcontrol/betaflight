@@ -25,7 +25,8 @@ PG_REGISTER_WITH_RESET_TEMPLATE(vtxSettingsConfig_t, vtxSettingsConfig, PG_VTX_S
 PG_RESET_TEMPLATE(vtxSettingsConfig_t, vtxSettingsConfig,
     .band = VTX_SETTINGS_DEFAULT_BAND,
     .channel = VTX_SETTINGS_DEFAULT_CHANNEL,
-    .power = VTX_SETTINGS_DEFAULT_POWER,
+    .lo_power = VTX_SETTINGS_DEFAULT_POWER,
+    .hi_power = VTX_SETTINGS_DEFAULT_POWER,
     .freq = 0
 );
 

@@ -1207,7 +1207,8 @@ static bool mspProcessOutCommand(uint8_t cmdMSP, sbuf_t *dst)
                 sbufWriteU8(dst, deviceType);
                 sbufWriteU8(dst, vtxSettingsConfig()->band);
                 sbufWriteU8(dst, vtxSettingsConfig()->channel);
-                sbufWriteU8(dst, vtxSettingsConfig()->power);
+                sbufWriteU8(dst, vtxSettingsConfig()->lo_power);
+                sbufWriteU8(dst, vtxSettingsConfig()->hi_power);
                 sbufWriteU8(dst, pitmode);
                 sbufWriteU16(dst, vtxSettingsConfig()->freq);
                 // future extensions here...
@@ -1677,7 +1678,8 @@ static mspResult_e mspProcessInCommand(uint8_t cmdMSP, sbuf_t *src)
                     }
 
                     if (sbufBytesRemaining(src) > 1) {
-                        vtxSettingsConfigMutable()->power = sbufReadU8(src);
+                        vtxSettingsConfigMutable()->lo_power = sbufReadU8(src);
+                        vtxSettingsConfigMutable()->hi_power = sbufReadU8(src);
                         // Delegate pitmode to vtx directly
                         const uint8_t newPitmode = sbufReadU8(src);
                         uint8_t currentPitmode = 0;

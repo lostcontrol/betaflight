@@ -55,7 +55,8 @@ uint8_t  saCmsRFState;          // RF state; ACTIVE, PIR, POR XXX Not currently 
 
 uint8_t  saCmsBand = 0;
 uint8_t  saCmsChan = 0;
-uint8_t  saCmsPower = 0;
+uint8_t  saCmsLoPower = 0;
+uint8_t  saCmsHiPower = 0;
 
 // Frequency derived from channel table (used for reference in band/channel mode)
 uint16_t saCmsFreqRef = 0;
@@ -370,7 +371,8 @@ static const char * const saCmsPowerNames[] = {
     "800",
 };
 
-static OSD_TAB_t saCmsEntPower = { &saCmsPower, VTX_SMARTAUDIO_POWER_COUNT, saCmsPowerNames};
+static OSD_TAB_t saCmsEntLoPower = { &saCmsLoPower, VTX_SMARTAUDIO_POWER_COUNT, saCmsPowerNames};
+static OSD_TAB_t saCmsEntHiPower = { &saCmsHiPower, VTX_SMARTAUDIO_POWER_COUNT, saCmsPowerNames};
 
 static OSD_UINT16_t saCmsEntFreqRef = { &saCmsFreqRef, 5600, 5900, 0 };
 
@@ -447,7 +449,8 @@ static long saCmsCommence(displayPort_t *pDisp, const void *self)
     // update vtx_ settings
     vtxSettingsConfigMutable()->band = saCmsBand;
     vtxSettingsConfigMutable()->channel = saCmsChan;
-    vtxSettingsConfigMutable()->power = saCmsPower;
+    vtxSettingsConfigMutable()->lo_power = saCmsLoPower;
+    vtxSettingsConfigMutable()->hi_power = saCmsHiPower;
     vtxSettingsConfigMutable()->freq = vtx58_Bandchan2Freq(saCmsBand, saCmsChan);
 
     return MENU_CHAIN_BACK;
@@ -598,7 +601,8 @@ static OSD_Entry saCmsMenuFreqModeEntries[] = {
 
     { "",       OME_Label,   NULL,                                     saCmsStatusString,  DYNAMIC },
     { "FREQ",   OME_Submenu, (CMSEntryFuncPtr)saCmsUserFreqGetString,  &saCmsMenuUserFreq, OPTSTRING },
-    { "POWER",  OME_TAB,     saCmsConfigPowerByGvar,                   &saCmsEntPower,     0 },
+    { "LOW POWER",  OME_TAB,     saCmsConfigPowerByGvar,                   &saCmsEntLoPower,     0 },
+    { "HIGH POWER",  OME_TAB,     saCmsConfigPowerByGvar,                   &saCmsEntHiPower,     0 },
     { "SET",    OME_Submenu, cmsMenuChange,                            &saCmsMenuCommence, 0 },
     { "CONFIG", OME_Submenu, cmsMenuChange,                            &saCmsMenuConfig,   0 },
 
@@ -614,7 +618,8 @@ static OSD_Entry saCmsMenuChanModeEntries[] =
     { "BAND",   OME_TAB,     saCmsConfigBandByGvar,  &saCmsEntBand,      0 },
     { "CHAN",   OME_TAB,     saCmsConfigChanByGvar,  &saCmsEntChan,      0 },
     { "(FREQ)", OME_UINT16,  NULL,                   &saCmsEntFreqRef,   DYNAMIC },
-    { "POWER",  OME_TAB,     saCmsConfigPowerByGvar, &saCmsEntPower,     0 },
+    { "LOW POWER",  OME_TAB,     saCmsConfigPowerByGvar, &saCmsEntLoPower,     0 },
+    { "HIGH POWER",  OME_TAB,     saCmsConfigPowerByGvar, &saCmsEntHiPower,     0 },
     { "SET",    OME_Submenu, cmsMenuChange,          &saCmsMenuCommence, 0 },
     { "CONFIG", OME_Submenu, cmsMenuChange,          &saCmsMenuConfig,   0 },
 

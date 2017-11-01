@@ -53,7 +53,8 @@
 typedef struct vtxSettingsConfig_s {
     uint8_t band;       // 1=A, 2=B, 3=E, 4=F(Airwaves/Fatshark), 5=Raceband
     uint8_t channel;    // 1-8
-    uint8_t power;      // 0 = lowest
+    uint8_t lo_power;   // 0 = lowest
+    uint8_t hi_power;   // 0 = lowest
     uint16_t freq;      // sets freq in MHz if band=0
 } vtxSettingsConfig_t;
 

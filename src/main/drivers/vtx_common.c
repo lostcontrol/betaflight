@@ -26,12 +26,22 @@
 #include "build/debug.h"
 #include "io/vtx_common.h"
 #include "drivers/vtx_common.h"
+#include "fc/runtime_config.h"
+#include "common/time.h"
+#include "common/utils.h"
 
 #if defined(VTX_COMMON)
 
 vtxDevice_t *vtxDevice = NULL;
 
 #define VTX_PARAM_CYCLE_TIME_US 100000 // 10Hz
+#define VTX_POWER_ON_ARM_DELAY_US (3 * 1000 * 1000) // 3 seconds
+
+typedef enum {
+    VTX_POWER_DISARMED = 0,
+    VTX_POWER_DELAY,
+    VTX_POWER_ARMED,
+} vtxPowerState_e;
 
 typedef enum {
     VTX_PARAM_BANDCHAN = 0,
@@ -62,56 +72,104 @@ bool vtxCommonDeviceRegistered(void)
     return vtxDevice;
 }
 
+static bool vtxCommonProcessBandChan(timeUs_t currentTimeUs, const vtxSettingsConfig_t* settings) {
+    UNUSED(currentTimeUs);
+
+    // If armed, no processing of the task needed.
+    if (ARMING_FLAG(ARMED))
+        return false;
+
+    if (settings->band) {
+        uint8_t vtxBand;
+        uint8_t vtxChan;
+        if (vtxCommonGetBandAndChannel(&vtxBand, &vtxChan)) {
+            if (settings->band != vtxBand || settings->channel != vtxChan) {
+                vtxCommonSetBandAndChannel(settings->band, settings->channel);
+            }
+        }
+#if defined(VTX_SETTINGS_FREQCMD)
+    } else {
+        uint16_t vtxFreq;
+        if (vtxCommonGetFrequency(&vtxFreq)) {
+            if (settings->freq != vtxFreq) {
+                vtxCommonSetFrequency(settings->freq);
+            }
+        }
+#endif
+    }
+
+    return true;
+}
+
+static bool vtxCommonProcessPower(timeUs_t currentTimeUs, const vtxSettingsConfig_t* settings)
+{
+    static vtxPowerState_e state = VTX_POWER_DISARMED;
+    static timeUs_t lastArmTimeUs = 0;
+
+    bool processingNeeded = true;
+    const bool armed = ARMING_FLAG(ARMED);
+    uint8_t newPower = UINT8_MAX;
+
+    switch (state) {
+    case VTX_POWER_DISARMED:
+        if (armed) {
+            lastArmTimeUs = currentTimeUs;
+            state = VTX_POWER_DELAY;
+        } else {
+            newPower = settings->lo_power;
+        }
+        break;
+    case VTX_POWER_DELAY:
+        if (cmpTimeUs(currentTimeUs, lastArmTimeUs) > VTX_POWER_ON_ARM_DELAY_US) {
+            newPower = settings->hi_power;
+            state = VTX_POWER_ARMED;
+        } else if (!armed) {
+            state = VTX_POWER_DISARMED;
+        }
+        break;
+    case VTX_POWER_ARMED:
+        if (!armed) {
+            state = VTX_POWER_DISARMED;
+        } else {
+            // Power changed, no more processing of the task needed.
+            processingNeeded = false;
+        }
+        break;
+    }
+
+    if (newPower != UINT8_MAX) {
+        uint8_t vtxPower;
+        vtxCommonGetPowerIndex(&vtxPower);
+        if (vtxPower != newPower) {
+            vtxCommonSetPowerByIndex(newPower);
+        }
+    }
+
+    return processingNeeded;
+}
+
 void vtxCommonProcess(uint32_t currentTimeUs)
 {
     if (!vtxDevice)
-    return;
+        return;
 
-    static uint32_t lastCycleTimeUs;
-    static uint8_t scheduleIndex;
-    uint8_t currentSchedule = vtxParamSchedule[scheduleIndex];
+    static uint32_t lastCycleTimeUs = 0;
+    static uint8_t scheduleIndex = 0;
 
     if (vtxDevice->vTable->process) {
         // Process VTX changes from the parameter group at 10Hz
+        bool processingNeeded = true;
         if (currentTimeUs > lastCycleTimeUs + VTX_PARAM_CYCLE_TIME_US) {
             const vtxSettingsConfig_t settings = vtxCommonGetSettings();
-            switch (currentSchedule)
-            {
-                case VTX_PARAM_BANDCHAN:
-                    if (settings.band) {
-                        uint8_t vtxBand;
-                        uint8_t vtxChan;
-                        if (vtxCommonGetBandAndChannel(&vtxBand, &vtxChan)) {
-                            if (settings.band != vtxBand || settings.channel != vtxChan) {
-                                vtxCommonSetBandAndChannel(settings.band, settings.channel);
-                            }
-                        }
-#if defined(VTX_SETTINGS_FREQCMD)
-                    } else {
-                        uint16_t vtxFreq;
-                        if (vtxCommonGetFrequency(&vtxFreq)) {
-                            if (settings.freq != vtxFreq) {
-                                vtxCommonSetFrequency(settings.freq);
-                            }
-                        }
-#endif
-                    }
-                    break;
-                case VTX_PARAM_POWER: ;
-                    uint8_t vtxPower;
-                    if (vtxCommonGetPowerIndex(&vtxPower)) {
-                        if (settings.power != vtxPower) {
-                            vtxCommonSetPowerByIndex(settings.power);
-                        }
-                    }
-                    break;
-                default:
-                    break;
+            if (++scheduleIndex % 2 == 0) {
+                processingNeeded = vtxCommonProcessBandChan(currentTimeUs, &settings);
+            } else {
+                processingNeeded = vtxCommonProcessPower(currentTimeUs, &settings);
             }
             lastCycleTimeUs = currentTimeUs;
-            scheduleIndex = (scheduleIndex + 1) % vtxParamScheduleCount;
         }
-        vtxDevice->vTable->process(currentTimeUs);
+        if (processingNeeded)
+            vtxDevice->vTable->process(currentTimeUs);
     }
 }
 
@@ -215,7 +273,8 @@ vtxSettingsConfig_t vtxCommonGetSettings(void)
         .band = vtxSettingsConfigMutable()->band,
         .channel = vtxSettingsConfigMutable()->channel,
         .freq = vtxSettingsConfigMutable()->freq,
-        .power = vtxSettingsConfigMutable()->power,
+        .lo_power = vtxSettingsConfigMutable()->lo_power,
+        .hi_power = vtxSettingsConfigMutable()->hi_power,
     };
 }
 
@@ -224,7 +283,8 @@ void vtxCommonUpdateSettings(vtxSettingsConfig_t config)
     vtxSettingsConfigMutable()->band = config.band;
     vtxSettingsConfigMutable()->channel = config.channel;
     vtxSettingsConfigMutable()->freq = config.freq;
-    vtxSettingsConfigMutable()->power = config.power;
+    vtxSettingsConfigMutable()->lo_power = config.lo_power;
+    vtxSettingsConfigMutable()->hi_power = config.hi_power;
 }
 
 #endif

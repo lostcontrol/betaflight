@@ -287,8 +287,8 @@ const uint8_t vtxTrampPi[] = {           // Spektrum Spec    Tx menu  Tx sends  
       // Seems to be no unified internal VTX API std for popwer levels/indexes, VTX device brand specific.
       uint8_t power = convertSpektrumVtxPowerIndex(vtx.power);
       if (vtxCommonDeviceRegistered()) {
-        if (prevSettings.power != power) {
-          newSettings.power = power;
+        if (prevSettings.hi_power != power) {
+          newSettings.hi_power = power;
         }
       }
 

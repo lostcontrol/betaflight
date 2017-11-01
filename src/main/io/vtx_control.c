@@ -162,7 +162,7 @@ void vtxCyclePower(const uint8_t powerStep)
             newPower = capability.powerCount;
         }
 
-        vtxSettingsConfigMutable()->power = newPower;
+        vtxSettingsConfigMutable()->hi_power = newPower;
     }
 }
 

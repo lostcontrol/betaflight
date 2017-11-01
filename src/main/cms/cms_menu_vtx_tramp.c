@@ -70,9 +70,11 @@ static OSD_TAB_t trampCmsEntChan = { &trampCmsChan, VTX_TRAMP_CHANNEL_COUNT, vtx
 
 static OSD_UINT16_t trampCmsEntFreqRef = { &trampCmsFreqRef, 5600, 5900, 0 };
 
-static uint8_t trampCmsPower = 1;
+static uint8_t trampCmsLoPower = 1;
+static uint8_t trampCmsHiPower = 1;
 
-static OSD_TAB_t trampCmsEntPower = { &trampCmsPower, sizeof(trampPowerTable), trampPowerNames };
+static OSD_TAB_t trampCmsEntLoPower = { &trampCmsLoPower, sizeof(trampPowerTable), trampPowerNames };
+static OSD_TAB_t trampCmsEntHiPower = { &trampCmsHiPower, sizeof(trampPowerTable), trampPowerNames };
 
 static void trampCmsUpdateFreqRef(void)
 {
@@ -113,9 +115,13 @@ static long trampCmsConfigPower(displayPort_t *pDisp, const void *self)
     UNUSED(pDisp);
     UNUSED(self);
 
-    if (trampCmsPower == 0)
+    if (trampCmsLoPower == 0)
         // Bounce back
-        trampCmsPower = 1;
+        trampCmsLoPower = 1;
+
+    if (trampCmsHiPower == 0)
+        // Bounce back
+        trampCmsHiPower = 1;
 
     return 0;
 }
@@ -149,7 +155,7 @@ static long trampCmsCommence(displayPort_t *pDisp, const void *self)
     UNUSED(self);
 
     trampSetBandAndChannel(trampCmsBand, trampCmsChan);
-    trampSetRFPower(trampPowerTable[trampCmsPower-1]);
+    trampSetRFPower(trampPowerTable[trampCmsLoPower-1]);
 
     // If it fails, the user should retry later
     trampCommitChanges();
@@ -157,7 +163,8 @@ static long trampCmsCommence(displayPort_t *pDisp, const void *self)
     // update'vtx_' settings
     vtxSettingsConfigMutable()->band = trampCmsBand;
     vtxSettingsConfigMutable()->channel = trampCmsChan;
-    vtxSettingsConfigMutable()->power = trampCmsPower;
+    vtxSettingsConfigMutable()->lo_power = trampCmsLoPower;
+    vtxSettingsConfigMutable()->hi_power = trampCmsHiPower;
     vtxSettingsConfigMutable()->freq = vtx58_Bandchan2Freq(trampCmsBand, trampCmsChan);
 
     return MENU_CHAIN_BACK;
@@ -174,7 +181,7 @@ static void trampCmsInitSettings(void)
     if (trampConfiguredPower > 0) {
         for (uint8_t i = 0; i < VTX_TRAMP_POWER_COUNT; i++) {
             if (trampConfiguredPower <= trampPowerTable[i]) {
-                trampCmsPower = i + 1;
+                trampCmsHiPower = i + 1;
                 break;
             }
         }
@@ -212,7 +219,8 @@ static OSD_Entry trampMenuEntries[] =
     { "BAND",   OME_TAB,     trampCmsConfigBand,     &trampCmsEntBand,      0 },
     { "CHAN",   OME_TAB,     trampCmsConfigChan,     &trampCmsEntChan,      0 },
     { "(FREQ)", OME_UINT16,  NULL,                   &trampCmsEntFreqRef,   DYNAMIC },
-    { "POWER",  OME_TAB,     trampCmsConfigPower,    &trampCmsEntPower,     0 },
+    { "LOW POWER",  OME_TAB,     trampCmsConfigPower,    &trampCmsEntLoPower,     0 },
+    { "HIGH POWER",  OME_TAB,    trampCmsConfigPower,    &trampCmsEntHiPower,     0 },
     { "T(C)",   OME_INT16,   NULL,                   &trampCmsEntTemp,      DYNAMIC },
     { "SET",    OME_Submenu, cmsMenuChange,          &trampCmsMenuCommence, 0 },
 

@@ -37,7 +37,8 @@
 
 static uint8_t cmsx_vtxBand;
 static uint8_t cmsx_vtxChannel;
-static uint8_t cmsx_vtxPower;
+static uint8_t cmsx_vtxLoPower;
+static uint8_t cmsx_vtxHiPower;
 
 static const char * const rtc6705BandNames[] = {
     "BOSCAM A",
@@ -49,13 +50,15 @@ static const char * const rtc6705BandNames[] = {
 
 static OSD_TAB_t entryVtxBand =         {&cmsx_vtxBand, ARRAYLEN(rtc6705BandNames) - 1, &rtc6705BandNames[0]};
 static OSD_UINT8_t entryVtxChannel =    {&cmsx_vtxChannel, 1, VTX_RTC6705_CHANNEL_COUNT, 1};
-static OSD_TAB_t entryVtxPower =        {&cmsx_vtxPower, VTX_RTC6705_POWER_COUNT - 1 - VTX_RTC6705_MIN_POWER, &rtc6705PowerNames[VTX_RTC6705_MIN_POWER]};
+static OSD_TAB_t entryVtxLoPower =        {&cmsx_vtxLoPower, VTX_RTC6705_POWER_COUNT - 1 - VTX_RTC6705_MIN_POWER, &rtc6705PowerNames[VTX_RTC6705_MIN_POWER]};
+static OSD_TAB_t entryVtxHiPower =        {&cmsx_vtxHiPower, VTX_RTC6705_POWER_COUNT - 1 - VTX_RTC6705_MIN_POWER, &rtc6705PowerNames[VTX_RTC6705_MIN_POWER]};
 
 static void cmsx_Vtx_ConfigRead(void)
 {
     cmsx_vtxBand = vtxSettingsConfig()->band - 1;
     cmsx_vtxChannel = vtxSettingsConfig()->channel;
-    cmsx_vtxPower = vtxSettingsConfig()->power - VTX_RTC6705_MIN_POWER;
+    cmsx_vtxLoPower = vtxSettingsConfig()->lo_power - VTX_RTC6705_MIN_POWER;
+    cmsx_vtxHiPower = vtxSettingsConfig()->hi_power - VTX_RTC6705_MIN_POWER;
 }
 
 static void cmsx_Vtx_ConfigWriteback(void)
@@ -63,7 +66,8 @@ static void cmsx_Vtx_ConfigWriteback(void)
     // update vtx_ settings
     vtxSettingsConfigMutable()->band = cmsx_vtxBand + 1;
     vtxSettingsConfigMutable()->channel = cmsx_vtxChannel;
-    vtxSettingsConfigMutable()->power = cmsx_vtxPower + VTX_RTC6705_MIN_POWER;
+    vtxSettingsConfigMutable()->lo_power = cmsx_vtxLoPower + VTX_RTC6705_MIN_POWER;
+    vtxSettingsConfigMutable()->hi_power = cmsx_vtxHiPower + VTX_RTC6705_MIN_POWER;
     vtxSettingsConfigMutable()->freq = vtx58_Bandchan2Freq(cmsx_vtxBand + 1, cmsx_vtxChannel);
 }
 
@@ -89,7 +93,8 @@ static OSD_Entry cmsx_menuVtxEntries[] =
     {"--- VTX ---", OME_Label, NULL, NULL, 0},
     {"BAND", OME_TAB, NULL, &entryVtxBand, 0},
     {"CHANNEL", OME_UINT8, NULL, &entryVtxChannel, 0},
-    {"POWER", OME_TAB, NULL, &entryVtxPower, 0},
+    {"LOW POWER", OME_TAB, NULL, &entryVtxLoPower, 0},
+    {"HIGH POWER", OME_TAB, NULL, &entryVtxHiPower, 0},
     {"BACK", OME_Back, NULL, NULL, 0},
     {NULL, OME_END, NULL, NULL, 0}
 };
