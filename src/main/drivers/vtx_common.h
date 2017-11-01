@@ -19,22 +19,22 @@
 
 #pragma once
 
+#include "io/vtx_common.h"
+
 // check value for MSP_SET_VTX_CONFIG to determine if value is encoded
 // band/channel or frequency in MHz (3 bits for band and 3 bits for channel)
 #define VTXCOMMON_MSP_BANDCHAN_CHKVAL ((uint16_t)((7 << 3) + 7))
 
 typedef enum {
     VTXDEV_UNSUPPORTED = 0, // reserved for MSP
-    VTXDEV_RTC6705    = 1,
+    VTXDEV_RTC6705     = 1,
     // 2 reserved
-    VTXDEV_SMARTAUDIO = 3,
-    VTXDEV_TRAMP      = 4,
-    VTXDEV_UNKNOWN    = 0xFF,
+    VTXDEV_SMARTAUDIO  = 3,
+    VTXDEV_TRAMP       = 4,
+    VTXDEV_UNKNOWN     = 0xFF,
 } vtxDevType_e;
 
-
 // VTX magic numbers
-
 #define VTX_COMMON_BAND_USER      0
 #define VTX_COMMON_BAND_A         1
 #define VTX_COMMON_BAND_B         2
@@ -47,14 +47,14 @@ typedef enum {
 #define VTX_6705_POWER_25      1
 #define VTX_6705_POWER_200     2
 
-// SmartAudio "---", 25, 200, 500. 800 mW
+// SmartAudio "---", 25, 200, 500, 800 mW
 #define VTX_SA_POWER_OFF          0
 #define VTX_SA_POWER_25           1
 #define VTX_SA_POWER_200          2
 #define VTX_SA_POWER_500          3
 #define VTX_SA_POWER_800          4
 
-// Tramp "---", 25, 200, 400. 600 mW
+// Tramp "---", 25, 100, 200, 400, 600 mW
 #define VTX_TRAMP_POWER_OFF       0
 #define VTX_TRAMP_POWER_25        1
 #define VTX_TRAMP_POWER_100       2
@@ -128,3 +128,5 @@ bool vtxCommonGetPowerIndex(uint8_t *pIndex);
 bool vtxCommonGetPitMode(uint8_t *pOnOff);
 bool vtxCommonGetFrequency(uint16_t *pFreq);
 bool vtxCommonGetDeviceCapability(vtxDeviceCapability_t *pDeviceCapability);
+vtxSettingsConfig_t vtxCommonGetSettings(void);
+void vtxCommonUpdateSettings(vtxSettingsConfig_t config);

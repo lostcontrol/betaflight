@@ -63,6 +63,7 @@
 #include "io/transponder_ir.h"
 #include "io/vtx_tramp.h" // Will be gone
 #include "io/rcdevice_cam.h"
+#include "io/vtx_common.h"
 
 #include "msp/msp_serial.h"
 
